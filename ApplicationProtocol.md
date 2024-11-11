@@ -38,6 +38,8 @@ The server will then respond with a good code and attribute a random nickname to
 
 If the server is not in a waiting state, the client's connexion is closed with a bad code.
 
+If the next game already has 20 players registered, the client's connexion is closed with a bad code.
+
 When the server starts the game, it sends a message the first mental math operation to all the connected
 clients and handles every client in its own thread.
 
@@ -55,24 +57,79 @@ the client from the list of connected clients.
 
 ## Section 3 - Messages
 
-### Join the server
+### Server status broadcast
 
-The client sends a join message to the server indicating the client's username.
+#### Protocol
 
-#### Request
 
-```text
-JOIN <name>
+#### Message
 ```
 
-- `name`: the name of the client
+```
+
+#### Parameters
 
 #### Response
 
-- `OK`: the client has been granted access to the server
+### Join the next game round
+
+The client requests to join the next game round.
+
+#### Protocol
+TCP
+
+#### Message
+No message is sent. The client simply opens a connexion in TCP that should always be accepted by the server,
+and expects a response.
+
+#### Response
+
+- `OK <nickname>`: the client has been granted access to the next round, the client's nickname for this round is `<nickname>`
 - `ERROR <code>`: an error occurred during the join. The error code is an
-  integer between 1 and 1 inclusive. The error codes are as follow:
-  - 1: the client's name is already in use
+  integer between 1 and 2 inclusive. The error codes are as follow:
+  - 1: the server is not in a waiting state
+  - 2: the next round is full
+  The TCP connexion is closed.
+
+
+### Server status broadcast
+
+The server broadcasts a status message
+
+#### Protocol
+UDP
+
+#### Message
+```
+STATUS <status>
+```
+
+#### Parameters
+`<status>` can be:
+- `GAME IN PROGRESS`: A game is in progress and the server will not accept new players
+- `WAITING FOR PLAYERS`: Waiting for players for next round
+- `GAME START`: The game starts
+- `GAME END`: The game ends
+
+#### Response
+
+### Server status broadcast
+
+#### Protocol
+
+
+#### Message
+```
+
+```
+
+#### Parameters
+
+#### Response
+
+
+
+
 
 ### List connected clients
 
