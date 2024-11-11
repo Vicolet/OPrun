@@ -59,17 +59,25 @@ the client from the list of connected clients.
 
 ### Server status broadcast
 
-#### Protocol
+The server broadcasts a status message
 
+#### Protocol
+UDP
 
 #### Message
 ```
-
+STATUS <status>
 ```
 
 #### Parameters
+`<status>` can be:
+- `GAME IN PROGRESS`: A game is in progress and the server will not accept new players
+- `WAITING FOR PLAYERS`: Waiting for players for next round
+- `GAME START`: The game starts
+- `GAME END`: The game ends
 
 #### Response
+
 
 ### Join the next game round
 
@@ -90,28 +98,6 @@ and expects a response.
   - 1: the server is not in a waiting state
   - 2: the next round is full
   The TCP connexion is closed.
-
-
-### Server status broadcast
-
-The server broadcasts a status message
-
-#### Protocol
-UDP
-
-#### Message
-```
-STATUS <status>
-```
-
-#### Parameters
-`<status>` can be:
-- `GAME IN PROGRESS`: A game is in progress and the server will not accept new players
-- `WAITING FOR PLAYERS`: Waiting for players for next round
-- `GAME START`: The game starts
-- `GAME END`: The game ends
-
-#### Response
 
 ### Server status broadcast
 
