@@ -1,4 +1,4 @@
-package ch.heigvd.poo;
+package ch.heigvd.dai;
 
 public class Main {
     public static void main(String[] args) {
