@@ -139,7 +139,7 @@ INCORRECT
 ```
 
 #### Loop
-After that, if the answer was correct, the server adds points to the client and sends them a new calculation (loop to 1.)
+After that, if the answer was correct, the server adds points to the client and sends them a new calculation (loop to 1.)  
 if the answer was incorrect, the server waits for another `ANSWER` message from the client. (loop to 2.)
 
 ### Game End
@@ -167,9 +167,6 @@ wins the round.
 
 #### Response
 No response expected.
-
-
-After that, the server will emit a status broadcast `WAITING FOR PLAYERS`, and the game continues with the next round.
 
 ## Section 4 - Examples
 
