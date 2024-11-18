@@ -73,11 +73,9 @@ STATUS <status>
 `<status>` can be:
 - `GAME IN PROGRESS`: A game is in progress and the server will not accept new players
 - `WAITING FOR PLAYERS`: Waiting for players for next round
-- `GAME START`: The game starts
-- `GAME END`: The game ends
 
 #### Response
-
+No response expected.
 
 ### Join the next game round
 
@@ -87,8 +85,8 @@ The client requests to join the next game round.
 TCP
 
 #### Message
-No message is sent. The client simply opens a connexion in TCP that should always be accepted by the server,
-and expects a response.
+No message is sent. The client simply opens a connexion in TCP that should always be accepted by the server.  
+The client expects a response.
 
 #### Response
 
@@ -99,77 +97,79 @@ and expects a response.
   - 2: the next round is full
   The TCP connexion is closed.
 
-### Server status broadcast
+### Round start broadcast
+
+the server broadcasts a message to start a round
 
 #### Protocol
-
+UDP
 
 #### Message
 ```
-
+ROUND START
 ```
-
-#### Parameters
-
 #### Response
 
+No response expected.
 
+### Calculation dialog
 
+The server sends a calculation to a client and expects their answer. This is the round's game loop.
 
+#### Protocol
+TCP
 
-### List connected clients
-
-The client sends a message to the server to request the list of connected
-clients.
-
-#### Request
-
-```text
-LIST
+#### 1. Message from the server
+```
+CALCULATION <calculation>
 ```
 
-#### Response
-
-- `CLIENTS <client1> <client2> <client3> ...`: the list of connected clients.
-  The clients are separated by a space.
-
-### Send a message
-
-The client sends a message to the server indicating the recipient of the
-message. The server is then responsible for sending the message to the
-recipient.
-
-#### Request
-
-```text
-SEND <recipient> <message>
+#### 2. Answer from the client
+```
+ANSWER <answer>
 ```
 
-#### Response
-
-- `OK`: the message has been successfully sent
-- `ERROR <code>`: an error occurred while sending the message. The error code is
-  an integer between 1 and 2 inclusive. The error codes are as follow:
-  - 1: the recipient is not connected
-  - 2: the message exceeds 100 characters
-
-### Receive a message
-
-The server sends a message to the recipient indicating the sender of the
-message. The client is then responsible for displaying the received message.
-
-#### Request
-
-```text
-RECEIVE <message> <sender>
+#### 3. Validation from the server
+```
+CORRECT
+```
+or
+```
+INCORRECT
 ```
 
-- `message`: the received message
-- `sender`: the name of the message sender
+#### Loop
+After that, if the answer was correct, the server adds points to the client and sends them a new calculation (loop to 1.)
+if the answer was incorrect, the server waits for another `ANSWER` message from the client. (loop to 2.)
+
+### Game End
+
+To end the round, the servers simply closes the TCP connection with every client. 
+
+The server doesn't expects any responses after that.
+
+#### Protocol
+TCP
+
+### Leaderboard broadcast
+
+The server broadcasts the leaderboards of the finished round.
+
+#### Protocol
+UDP
+
+#### Message
+```
+LEADERBOARD <nickname 1> <number of points of player 1> <nickname 2> <number of points of player 2> ...
+```
+The server should sort the nickname by decroissant number of points, so that the first player in the leaderboard
+wins the round.
 
 #### Response
+No response expected.
 
-None.
+
+After that, the server will emit a status broadcast `WAITING FOR PLAYERS`, and the game continues with the next round.
 
 ## Section 4 - Examples
 
