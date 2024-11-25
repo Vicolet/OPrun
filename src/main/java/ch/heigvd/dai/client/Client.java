@@ -14,9 +14,9 @@ public class Client {
      * Méthode principale pour exécuter le client.
      */
     public static void run() {
-        try {
+        try (DatagramSocket udpSocket = new DatagramSocket();) {
             // Étape 1 : Écouter les messages de statut du serveur via UDP
-            DatagramSocket udpSocket = new DatagramSocket();
+
             System.out.println("Waiting for server broadcasts...");
 
             while (true) {
@@ -28,7 +28,6 @@ public class Client {
                     if (joinGame()) {
                         // Étape 2 : Jouer au jeu en TCP
                         playGame();
-                        break;
                     }
                 } else if (serverStatus.equals("STATUS GAME IN PROGRESS")) {
                     System.out.println("Game in progress. Waiting...");
@@ -36,10 +35,8 @@ public class Client {
                     System.out.println("Leaderboard: " + serverStatus.substring(11));
                 }
 
-                Thread.sleep(2000); // Attente entre les checks
+                Thread.sleep(500); // Attente entre les checks
             }
-
-            udpSocket.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
