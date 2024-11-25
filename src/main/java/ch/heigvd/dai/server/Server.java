@@ -3,8 +3,11 @@ package ch.heigvd.dai.server;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.*;
+import ch.heigvd.dai.server.Operation;
 
 public class Server {
 
@@ -23,6 +26,8 @@ public class Server {
     private CountDownLatch gameStartLatch = new CountDownLatch(1);
     private ExecutorService executor;
     private volatile boolean gameRunning = false;
+    private int nickNameIndex = 0;
+    private List<Operation> operationsList;
 
     public static void main(String[] args) {
         new Server().startServer();
@@ -59,7 +64,6 @@ public class Server {
             socket.send(packet);
             System.out.println("Broadcast sent");
 
-            //Thread.sleep(1000);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -75,12 +79,13 @@ public class Server {
 
             while (System.currentTimeMillis() < endTime) {
                 try {
-                    if(clients.size() >= 20){
+                    if(clients.size() >= 20 || nickNameIndex > nickNames.length){
+                        System.out.println("Max clients reached");
                         break;
                     }
                     Socket clientSocket = serverSocket.accept();
-                    ClientHandler handler = new ClientHandler(clientSocket, this);
-                    //TODO Attribute a random nickname from the nickNames list for the client
+                    String nickname = nickNames[nickNameIndex++];
+                    ClientHandler handler = new ClientHandler(clientSocket, this, nickname);
                     clients.add(handler);
                     executor.submit(handler);
                 } catch (SocketTimeoutException e) {
@@ -99,10 +104,24 @@ public class Server {
         System.out.println("Starting game with " + clients.size() + " players.");
 
         gameRunning = true;
+
+        generateOperationsList();
+
         // Signal the ClientHandlers that the game is starting
         gameStartLatch.countDown();
         broadcastToClients("START");
-        game();
+
+        long gameDuration = 2 * 60 * 1000; //TODO To define
+        long gameEndTime = System.currentTimeMillis() + gameDuration;
+
+        // Lancer la logique du jeu
+        game(gameEndTime);
+
+        // Après la fin du jeu
+        gameRunning = false;
+
+        // Construire et envoyer le classement
+        sendLeaderboard();
     }
 
     // Méthode pour envoyer un message à tous les clients
@@ -112,23 +131,49 @@ public class Server {
         }
     }
 
-    private void game(){
-        //TODO Check for the client who quit the game and handle it
-        while(gameRunning){ //TODO (Countdown of M minutes not while(true))
-            //TODO Create an array of X operations
-
-            //TODO Send the operation to the connected clients CALCULATION <calculation> TCP
-
-            //TODO Listens for the client answers ANSWER<answer> TCP
-
-            //TODO check client answer
-
-            //TODO if the answer is correct, send the next operation to the client and adds one point (CORRECT) TCP
-            //TODO if the answer is incorrect, sends INCORRECT to the client and waits for the correct answer (INCORRECT) TCP
-
-            //TODO repeat while the countdown is not over
+    private void generateOperationsList() {
+        // Déterminer le nombre d'opérations à générer
+        int operationsCount = 100; // Choisissez une valeur suffisamment grande
+        operationsList = new ArrayList<>(operationsCount);
+        for (int i = 0; i < operationsCount; i++) {
+            operationsList.add(new Operation(nbOperationNumbers));
         }
-        //TODO Announce that the game is finished by sending LEADERBOARD<nickname1><nbPoints> <nickname2><nbPoints>,... UDP
+    }
+
+    public Operation getOperation(int index) {
+        if (index < operationsList.size()) {
+            return operationsList.get(index);
+        } else {
+            // Générer une nouvelle opération si on atteint la fin de la liste
+            Operation newOp = new Operation(nbOperationNumbers);
+            operationsList.add(newOp);
+            return newOp;
+        }
+    }
+
+    private void game(long gameEndTime) {
+        while (System.currentTimeMillis() < gameEndTime && gameRunning) {
+            try {
+                Thread.sleep(1000); // Attendre un moment
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+    }
+
+    private void sendLeaderboard() {
+        // Construire le classement
+        StringBuilder leaderboard = new StringBuilder("LEADERBOARD");
+        // Trier les clients par score décroissant
+        List<ClientHandler> sortedClients = new ArrayList<>(clients);
+        sortedClients.sort(Comparator.comparingInt(ClientHandler::getScore).reversed());
+        for (ClientHandler client : sortedClients) {
+            leaderboard.append("<").append(client.getNickname()).append(">")
+                    .append("<").append(client.getScore()).append(">");
+        }
+        // Envoyer le classement à tous les clients
+        broadcastToClients(leaderboard.toString());
     }
 
     private void closeAllClients() {
@@ -154,11 +199,14 @@ public class Server {
         private volatile boolean running = true;
         private BufferedReader in;
         private BufferedWriter out;
+        private final String nickname;
+        private int score = 0;
+        private int operationIndex;
 
-
-        public ClientHandler(Socket socket, Server server) {
+        public ClientHandler(Socket socket, Server server, String nickname) {
             this.socket = socket;
             this.server = server;
+            this.nickname = nickname;
             try {
                 in = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
                 out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8));
@@ -168,12 +216,20 @@ public class Server {
             }
         }
 
+        public String getNickname() {
+            return nickname;
+        }
+
+        public int getScore() {
+            return score;
+        }
+
         public void sendMessage(String message) {
             try {
                 out.write(message + "\n");
                 out.flush();
             } catch (IOException e) {
-                System.out.println("Erreur lors de l'envoi du message au client : " + e.getMessage());
+                System.out.println("Error : " + e.getMessage());
                 close();
             }
         }
@@ -199,29 +255,45 @@ public class Server {
                 // Attendre le démarrage du jeu
                 server.gameStartLatch.await();
 
-                // Informer le client que le jeu a commencé
-                //sendMessage("START");
+                // Envoyer le pseudo au client
+                sendMessage("NICKNAME:" + nickname);
+
+                // Envoyer la première opération
+                Operation currentOperation = server.getOperation(operationIndex);
+                sendMessage(currentOperation.toString());
 
                 // Logique du jeu pour le client
                 while (running && server.gameRunning) {
-                    // Lire les messages du client
+                    // Lire la réponse du client
                     String message = in.readLine();
                     if (message == null) {
                         System.out.println("Client déconnecté.");
-                        //TODO Remove client from list
                         break;
                     }
-                    System.out.println("Reçu du client : " + message);
+                    System.out.println("Reçu du client [" + nickname + "] : " + message);
 
-                    // Traiter le message du client
-                    // Par exemple, vous pouvez gérer des commandes ou des actions de jeu
-                    // ...
-
-                    // Envoyer une réponse au client
-                    sendMessage("Serveur a reçu : " + message);
+                    // Traiter la réponse du client
+                    try {
+                        int clientAnswer = Integer.parseInt(message.trim());
+                        int correctAnswer = currentOperation.getResult();
+                        if (clientAnswer == correctAnswer) {
+                            score++;
+                            operationIndex++;
+                            // Envoyer la prochaine opération
+                            currentOperation = server.getOperation(operationIndex);
+                            sendMessage(currentOperation.toString());
+                        } else {
+                            // Envoyer "INCORRECT" et renvoyer la même opération
+                            sendMessage("INCORRECT");
+                            // On ne change pas l'opération actuelle
+                        }
+                    } catch (NumberFormatException e) {
+                        // Le client a envoyé un nombre invalide
+                        sendMessage("INVALID INPUT");
+                    }
                 }
 
-                System.out.println("ClientHandler ferme la connexion");
+                System.out.println("ClientHandler ferme la connexion pour " + nickname);
 
             } catch (IOException e) {
                 System.out.println("Erreur dans ClientHandler : " + e.getMessage());
