@@ -6,15 +6,29 @@ import java.util.Scanner;
 
 public class Client {
 
-    private static final String SERVER_HOST = "localhost"; // Adresse du serveur
+    private static String SERVER_HOST; // Adresse du serveur
     private static final int UDP_PORT = 42069; // Port UDP
     private static final int TCP_PORT = 42069; // Port TCP
+    private static final String MULTICAST_ADDRESS = "239.165.14.215";
+    private static final String NETWORK_INTERFACE = "lo";
+
+    // prevents developper from instanciating client without server ip
+    private Client(){}
+
+    public Client(String server_ip){
+        SERVER_HOST = server_ip;
+    }
 
     /**
      * Méthode principale pour exécuter le client.
      */
     public static void run() {
-        try (DatagramSocket udpSocket = new DatagramSocket();) {
+        try (MulticastSocket udpSocket = new MulticastSocket(UDP_PORT);) {
+
+            InetAddress multicastAddress = InetAddress.getByName(MULTICAST_ADDRESS);
+            InetSocketAddress multicastGroup = new InetSocketAddress(multicastAddress, UDP_PORT);
+                NetworkInterface networkInterface = NetworkInterface.getByName(NETWORK_INTERFACE);
+            udpSocket.joinGroup(multicastGroup, networkInterface);
             // Étape 1 : Écouter les messages de statut du serveur via UDP
 
             System.out.println("Waiting for server broadcasts...");
