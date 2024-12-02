@@ -31,10 +31,6 @@ public class Server {
     private int nickNameIndex = 0;
     private List<Operation> operationsList;
 
-    public static void main(String[] args) {
-        new Server().startServer();
-    }
-
     public void startServer() {
         while (true) {
             // Send UDP broadcast message "WFP"

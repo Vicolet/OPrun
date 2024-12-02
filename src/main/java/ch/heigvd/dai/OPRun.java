@@ -1,5 +1,7 @@
 package ch.heigvd.dai;
 
+import ch.heigvd.dai.client.Client;
+import ch.heigvd.dai.server.Server;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -8,7 +10,7 @@ import picocli.CommandLine.Option;
         name = "oprun",
         description = "Client - server game of quick maths !",
         version = "oprun 1.0",
-        subcommands = {OPRun.Client.class, OPRun.Server.class},
+        subcommands = {OPRun.ClientCommand.class, OPRun.ServerCommand.class},
         mixinStandardHelpOptions = true)
 public class OPRun {
 
@@ -24,7 +26,7 @@ public class OPRun {
 
     @Command(name="client", description = "launches the game in client mode",
             mixinStandardHelpOptions = true)
-    static class Client implements Runnable {
+    static class ClientCommand implements Runnable {
 
         @Option(names="--ip", description = "Ip of the server to connect to", required=true)
         String serverIp;
@@ -32,17 +34,17 @@ public class OPRun {
         @Override
         public void run() {
             System.out.println("Launching in client mode...");
-            System.out.println("Server IP: " + serverIp);
+            new Client(serverIp).run();
         }
     }
 
     @Command(name="server", description = "launches game server",
             mixinStandardHelpOptions = true)
-    static class Server implements Runnable {
+    static class ServerCommand implements Runnable {
 
         @Override
         public void run() {
-            System.out.println("Launching in server mode...");
+            new Server().startServer();
         }
     }
 }
