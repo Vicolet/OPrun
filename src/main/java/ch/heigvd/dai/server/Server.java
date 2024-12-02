@@ -12,8 +12,9 @@ import ch.heigvd.dai.server.Operation;
 public class Server {
 
     private static final int PORT = 42069;
+    private final String MULTICAST_ADDRESS = "239.165.14.215";
     private static final String HOST = "localhost";
-    private static final String MESSAGE = "WFP"; // Waiting For Players
+    private static final String MESSAGE_WFP = "STATUS WAITING FOR PLAYERS"; // Waiting For Players
     private static final int nbOperationNumbers = 4;
     private static final String[] nickNames = {"xX_EuclidSn1p3r_Xx", "ArchimedesRage", "xXx_NewtonCrush_xXx",
             "EulerXecutioner", "xX_LaplacePhantom_Xx", "GaussBlaster99", "PythagoreanPredator", "xXx_RiemannWrath_xXx",
@@ -21,6 +22,7 @@ public class Server {
             "LeibnizLethal", "xX_HilbertHunter_Xx", "NoetherNova", "FibonacciFrenzy", "xXx_KleinCrusher_xXx",
             "RamanujanRavager", "GaloisGuardian"};
 
+    private final int ROUND_DURATION_SECONDS = 2 * 60;
 
     private final List<ClientHandler> clients = new CopyOnWriteArrayList<>();
     private CountDownLatch gameStartLatch = new CountDownLatch(1);
@@ -36,7 +38,7 @@ public class Server {
     public void startServer() {
         while (true) {
             // Send UDP broadcast message "WFP"
-            sendBroadcast();
+            sendBroadcast(MESSAGE_WFP);
 
             // Accept client connections for 1 minute
             acceptClients();
@@ -44,6 +46,7 @@ public class Server {
             // Check if there is at least one player
             if (!clients.isEmpty()) {
                 // Start the game
+                sendBroadcast("ROUND START");
                 startGame();
             } else {
                 System.out.println("No players connected. Restarting...");
@@ -54,12 +57,12 @@ public class Server {
         }
     }
 
-    private void sendBroadcast() {
+    private void sendBroadcast(String message) {
         try (DatagramSocket socket = new DatagramSocket()) {
             socket.setBroadcast(true);
-            InetAddress broadcastAddress = InetAddress.getByName("255.255.255.255");
+            InetAddress broadcastAddress = InetAddress.getByName(MULTICAST_ADDRESS);
 
-            byte[] buffer = MESSAGE.getBytes(StandardCharsets.UTF_8);
+            byte[] buffer = message.getBytes(StandardCharsets.UTF_8);
             DatagramPacket packet = new DatagramPacket(buffer, buffer.length, broadcastAddress, PORT);
             socket.send(packet);
             System.out.println("Broadcast sent");
@@ -71,7 +74,7 @@ public class Server {
 
     private void acceptClients() {
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
-            executor = Executors.newCachedThreadPool();
+            executor = Executors.newVirtualThreadPerTaskExecutor();
             System.out.println("Server listening on port " + PORT);
 
             long endTime = System.currentTimeMillis() + 60000; // Accept clients for 1 minute
@@ -109,9 +112,8 @@ public class Server {
 
         // Signal the ClientHandlers that the game is starting
         gameStartLatch.countDown();
-        broadcastToClients("START");
 
-        long gameDuration = 2 * 60 * 1000; //TODO To define
+        long gameDuration = ROUND_DURATION_SECONDS * 1000;
         long gameEndTime = System.currentTimeMillis() + gameDuration;
 
         // Lancer la logique du jeu
@@ -122,13 +124,6 @@ public class Server {
 
         // Construire et envoyer le classement
         sendLeaderboard();
-    }
-
-    // Méthode pour envoyer un message à tous les clients
-    private void broadcastToClients(String message) {
-        for (ClientHandler client : clients) {
-            client.sendMessage(message);
-        }
     }
 
     private void generateOperationsList() {
@@ -164,7 +159,7 @@ public class Server {
 
     private void sendLeaderboard() {
         // Construire le classement
-        StringBuilder leaderboard = new StringBuilder("LEADERBOARD");
+        StringBuilder leaderboard = new StringBuilder("LEADERBOARD ");
         // Trier les clients par score décroissant
         List<ClientHandler> sortedClients = new ArrayList<>(clients);
         sortedClients.sort(Comparator.comparingInt(ClientHandler::getScore).reversed());
@@ -173,7 +168,7 @@ public class Server {
                     .append("<").append(client.getScore()).append(">");
         }
         // Envoyer le classement à tous les clients
-        broadcastToClients(leaderboard.toString());
+        sendBroadcast(leaderboard.toString());
     }
 
     private void closeAllClients() {
@@ -277,11 +272,12 @@ public class Server {
                         int clientAnswer = Integer.parseInt(message.trim());
                         int correctAnswer = currentOperation.getResult();
                         if (clientAnswer == correctAnswer) {
+                            sendMessage("CORRECT");
                             score++;
                             operationIndex++;
                             // Envoyer la prochaine opération
                             currentOperation = server.getOperation(operationIndex);
-                            sendMessage(currentOperation.toString());
+                            sendMessage("CALCULATION " + currentOperation.toString());
                         } else {
                             // Envoyer "INCORRECT" et renvoyer la même opération
                             sendMessage("INCORRECT");
@@ -289,7 +285,7 @@ public class Server {
                         }
                     } catch (NumberFormatException e) {
                         // Le client a envoyé un nombre invalide
-                        sendMessage("INVALID INPUT");
+                        sendMessage("INCORRECT");
                     }
                 }
 
