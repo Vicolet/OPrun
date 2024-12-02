@@ -11,12 +11,12 @@ public class Client {
     private static final int UDP_PORT = 42069; // Port UDP
     private static final int TCP_PORT = 42069; // Port TCP
     private static final String MULTICAST_ADDRESS = "239.165.14.215";
-    private static final String NETWORK_INTERFACE = "lo";
+    private static String NETWORK_INTERFACE;
 
     // prevents developper from instanciating client without server ip
     private Client(){}
 
-    public Client(String server_ip){
+    public Client(String server_ip, String network_interface){
         SERVER_HOST = server_ip;
     }
 
@@ -28,7 +28,7 @@ public class Client {
 
             InetAddress multicastAddress = InetAddress.getByName(MULTICAST_ADDRESS);
             InetSocketAddress multicastGroup = new InetSocketAddress(multicastAddress, UDP_PORT);
-                NetworkInterface networkInterface = NetworkInterface.getByName(NETWORK_INTERFACE);
+            NetworkInterface networkInterface = NetworkInterface.getByName(NETWORK_INTERFACE);
             udpSocket.joinGroup(multicastGroup, networkInterface);
             // Étape 1 : Écouter les messages de statut du serveur via UDP
 
@@ -55,7 +55,10 @@ public class Client {
                 Thread.sleep(500); // Attente entre les checks
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            if(NETWORK_INTERFACE == "CHANGE-ME!!!")
+                System.out.println("Please change the IntelliJ configuration to use your network interface name!");
+            else
+                e.printStackTrace();
         }
     }
 

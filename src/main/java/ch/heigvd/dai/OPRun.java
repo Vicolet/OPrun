@@ -31,10 +31,13 @@ public class OPRun {
         @Option(names="--ip", description = "Ip of the server to connect to", required=true)
         String serverIp;
 
+        @Option(names="--interface", description = "Name of the network interface to use", required=true)
+        String networkInterface;
+
         @Override
         public void run() {
             System.out.println("Launching in client mode...");
-            new Client(serverIp).run();
+            new Client(serverIp, networkInterface).run();
         }
     }
 

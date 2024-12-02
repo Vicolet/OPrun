@@ -13,7 +13,6 @@ public class Server {
 
     private static final int PORT = 42069;
     private final String MULTICAST_ADDRESS = "239.165.14.215";
-    private static final String HOST = "localhost";
     private static final String MESSAGE_WFP = "STATUS WAITING FOR PLAYERS"; // Waiting For Players
     private static final int nbOperationNumbers = 4;
     private static final String[] nickNames = {"xX_EuclidSn1p3r_Xx", "ArchimedesRage", "xXx_NewtonCrush_xXx",
