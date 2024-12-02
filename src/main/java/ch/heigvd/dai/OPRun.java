@@ -3,22 +3,21 @@ package ch.heigvd.dai;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
-import picocli.CommandLine.Parameters;
 
 @Command(
         name = "oprun",
         description = "Client - server game of quick maths !",
         version = "oprun 1.0",
-        subcommands = {OpRunApp.Client.class, OpRunApp.Server.class},
+        subcommands = {OPRun.Client.class, OPRun.Server.class},
         mixinStandardHelpOptions = true)
-public class OpRunApp {
+public class OPRun {
 
     /**
      * Entry point
      * @param args arguments to give to the program
      */
     public static void main(String[] args) {
-        int exitCode = new CommandLine(new OpRunApp()).execute(args);
+        int exitCode = new CommandLine(new OPRun()).execute(args);
         System.exit(exitCode);
     }
 
