@@ -2,6 +2,7 @@ package ch.heigvd.dai.client;
 
 import java.io.*;
 import java.net.*;
+import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 
 public class Client {
@@ -34,18 +35,20 @@ public class Client {
             System.out.println("Waiting for server broadcasts...");
 
             while (true) {
+                // Recevoir le statut du serveur via UDP
                 String serverStatus = receiveUdpMessage(udpSocket);
                 System.out.println("Server status: " + serverStatus);
 
                 if (serverStatus.equals("STATUS WAITING FOR PLAYERS")) {
-                    // Si le serveur est prêt, établir une connexion TCP
+                    // Si le serveur est prêt, tenter de rejoindre une partie
                     if (joinGame()) {
-                        // Étape 2 : Jouer au jeu en TCP
+                        // Jouer au jeu en TCP
                         playGame();
                     }
                 } else if (serverStatus.equals("STATUS GAME IN PROGRESS")) {
                     System.out.println("Game in progress. Waiting...");
                 } else if (serverStatus.startsWith("LEADERBOARD")) {
+                    // Afficher les classements après un round
                     System.out.println("Leaderboard: " + serverStatus.substring(11));
                 }
 
@@ -64,36 +67,32 @@ public class Client {
     private static boolean joinGame() {
         try (Socket tcpSocket = new Socket(SERVER_HOST, TCP_PORT)) {
             System.out.println("Connecting to server via TCP...");
-            BufferedReader in = new BufferedReader(new InputStreamReader(tcpSocket.getInputStream()));
+            BufferedReader in = new BufferedReader(new InputStreamReader(tcpSocket.getInputStream(), StandardCharsets.UTF_8));
+            PrintWriter out = new PrintWriter(new OutputStreamWriter(tcpSocket.getOutputStream(), StandardCharsets.UTF_8), true);
 
             // Lire la réponse du serveur
             String response = in.readLine();
-            if (response.startsWith("OK")) {
-                String nickname = response.split(" ")[1];
+            if (response.startsWith("NICKNAME:")) {
+                String nickname = response.substring(9);
                 System.out.println("Joined game as " + nickname);
                 return true;
-            } else if (response.startsWith("ERROR")) {
-                int errorCode = Integer.parseInt(response.split(" ")[1]);
-                if (errorCode == 1) {
-                    System.out.println("Error: Server is not in a waiting state.");
-                } else if (errorCode == 2) {
-                    System.out.println("Error: The next round is full.");
-                }
+            } else {
+                System.out.println("Failed to join game. Response: " + response);
                 return false;
             }
         } catch (IOException e) {
             System.out.println("Failed to join game: " + e.getMessage());
+            return false;
         }
-        return false;
     }
 
     /**
-     * Joue au jeu de calcul mental selon le protocole OPrun.
+     * Joue au jeu en TCP, répond aux calculs et reçoit les validations.
      */
     private static void playGame() {
         try (Socket tcpSocket = new Socket(SERVER_HOST, TCP_PORT);
-             BufferedReader in = new BufferedReader(new InputStreamReader(tcpSocket.getInputStream()));
-             PrintWriter out = new PrintWriter(tcpSocket.getOutputStream(), true);
+             BufferedReader in = new BufferedReader(new InputStreamReader(tcpSocket.getInputStream(), StandardCharsets.UTF_8));
+             PrintWriter out = new PrintWriter(new OutputStreamWriter(tcpSocket.getOutputStream(), StandardCharsets.UTF_8), true);
              Scanner scanner = new Scanner(System.in)) {
 
             System.out.println("Game started! Solve the calculations.");
@@ -120,6 +119,7 @@ public class Client {
                         System.out.println("Incorrect. Try again.");
                     }
                 } else if (serverMessage.equals("END ROUND")) {
+                    // Fin de la partie
                     System.out.println("The round has ended.");
                     break;
                 }
