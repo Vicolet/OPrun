@@ -98,7 +98,8 @@ public class Client {
             System.out.println("Game started! Solve the calculations.");
 
             String serverMessage;
-            while ((serverMessage = in.readLine()) != null) {
+            boolean correct = false;
+            while ((serverMessage = in.readLine()) != null || !correct) { //TODO
                 if (serverMessage.startsWith("CALCULATION ")) {
                     // Recevoir une opération
                     String calculation = serverMessage.substring(12); // Enlever "CALCULATION "
@@ -115,8 +116,10 @@ public class Client {
                     String validation = in.readLine();
                     if (validation.equals("CORRECT")) {
                         System.out.println("Correct!");
+                        correct = true;
                     } else if (validation.equals("INCORRECT")) {
                         System.out.println("Incorrect. Try again.");
+                        correct = false;
                     }
                 } else if (serverMessage.equals("END ROUND")) {
                     // Fin de la partie
@@ -124,7 +127,7 @@ public class Client {
                     break;
                 }
             }
-
+            System.out.println("Exited game");
         } catch (IOException e) {
             System.out.println("Failed to join game: " + e.getMessage());
             return false;

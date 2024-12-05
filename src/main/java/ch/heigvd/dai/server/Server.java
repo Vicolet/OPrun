@@ -270,13 +270,14 @@ public class Server {
                             score++;
                             operationIndex++;
                             // Envoyer la prochaine opération
-                            currentOperation = server.getOperation(operationIndex);
-                            sendMessage("CALCULATION " + currentOperation.toString());
+
                         } else {
                             // Envoyer "INCORRECT" et renvoyer la même opération
                             sendMessage("INCORRECT");
                             // On ne change pas l'opération actuelle
                         }
+                        currentOperation = server.getOperation(operationIndex);
+                        sendMessage("CALCULATION " + currentOperation.toString());
                     } catch (NumberFormatException e) {
                         // Le client a envoyé un nombre invalide
                         System.out.println("bug");
