@@ -37,7 +37,8 @@ public class OPRun {
         @Override
         public void run() {
             System.out.println("Launching in client mode...");
-            new Client(serverIp, networkInterface).run();
+            new Client(serverIp, networkInterface);
+            Client.run();
         }
     }
 
