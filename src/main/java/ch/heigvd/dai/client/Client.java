@@ -27,6 +27,9 @@ public class Client {
     public static void run() {
         try (MulticastSocket udpSocket = new MulticastSocket(UDP_PORT);) {
 
+            if(NETWORK_INTERFACE.equals("CHANGE-ME!!!"))
+                throw new RuntimeException("bad network interface");
+
             InetAddress multicastAddress = InetAddress.getByName(MULTICAST_ADDRESS);
             InetSocketAddress multicastGroup = new InetSocketAddress(multicastAddress, UDP_PORT);
             NetworkInterface networkInterface = NetworkInterface.getByName(NETWORK_INTERFACE);
@@ -56,7 +59,7 @@ public class Client {
                 Thread.sleep(500); // Attente entre les checks
             }
         } catch (Exception e) {
-            if(NETWORK_INTERFACE == "CHANGE-ME!!!")
+            if(NETWORK_INTERFACE.equals("CHANGE-ME!!!"))
                 System.out.println("Please change the IntelliJ configuration to use your network interface name!");
             else
                 e.printStackTrace();
