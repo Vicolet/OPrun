@@ -72,7 +72,7 @@ public class Server {
             executor = Executors.newVirtualThreadPerTaskExecutor();
             System.out.println("Server listening on port " + PORT);
 
-            long endTime = System.currentTimeMillis() + 60000; // Accept clients for 1 minute
+            long endTime = System.currentTimeMillis() + 2000;//60000 // Accept clients for 1 minute //TODO
             serverSocket.setSoTimeout(1000); // 1-second timeout for accept()
 
             while (System.currentTimeMillis() < endTime) {
