@@ -18,6 +18,7 @@ public class Client {
 
     public Client(String server_ip, String network_interface){
         SERVER_HOST = server_ip;
+        NETWORK_INTERFACE = network_interface;
     }
 
     /**
