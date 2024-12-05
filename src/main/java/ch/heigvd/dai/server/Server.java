@@ -259,10 +259,11 @@ public class Server {
                         break;
                     }
                     System.out.println("Reçu du client [" + nickname + "] : " + message);
-
+                    System.out.println("Correct answer: " + currentOperation.getResult()); //TODO
                     // Traiter la réponse du client
                     try {
-                        int clientAnswer = Integer.parseInt(message.trim());
+
+                        int clientAnswer = Integer.parseInt(message.substring(7).trim()); // 7 stands for ANSWER
                         int correctAnswer = currentOperation.getResult();
                         if (clientAnswer == correctAnswer) {
                             sendMessage("CORRECT");
@@ -278,6 +279,7 @@ public class Server {
                         }
                     } catch (NumberFormatException e) {
                         // Le client a envoyé un nombre invalide
+                        System.out.println("bug");
                         sendMessage("INCORRECT");
                     }
                 }
