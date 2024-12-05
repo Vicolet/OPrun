@@ -85,7 +85,7 @@ public class Client {
 
             // Lire la réponse du serveur
             String response = in.readLine();
-            if (!response.startsWith("NICKNAME:")) {
+            if (!response.startsWith("NICKNAME ")) {
 
                 System.out.println("Failed to join game. Response: " + response);
                 return false;

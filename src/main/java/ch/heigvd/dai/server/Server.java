@@ -239,14 +239,14 @@ public class Server {
                 System.out.println("[Serveur] Nouveau client connecté depuis "
                         + socket.getInetAddress().getHostAddress() + ":" + socket.getPort());
 
+                // Envoyer le pseudo au client
+                sendMessage("NICKNAME " + nickname);
+
                 String clientMessage = in.readLine();
                 System.out.println("[Serveur a reçu des données textuelles du client] : " + clientMessage);
 
                 // Attendre le démarrage du jeu
                 server.gameStartLatch.await();
-
-                // Envoyer le pseudo au client
-                sendMessage("NICKNAME:" + nickname);
 
                 // Envoyer la première opération
                 Operation currentOperation = server.getOperation(operationIndex);
