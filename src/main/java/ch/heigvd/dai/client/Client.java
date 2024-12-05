@@ -45,10 +45,13 @@ public class Client {
 
                 if (serverStatus.equals("STATUS WAITING FOR PLAYERS")) {
                     // Si le serveur est prêt, tenter de rejoindre une partie
-                    if (joinGame()) {
-                        // Jouer au jeu en TCP
-                        playGame();
+                    if(!joinGame())
+                    {
+                        System.out.println("Bye bye");
+                        //TODO: close
+                        return;
                     }
+
                 } else if (serverStatus.equals("STATUS GAME IN PROGRESS")) {
                     System.out.println("Game in progress. Waiting...");
                 } else if (serverStatus.startsWith("LEADERBOARD")) {
@@ -72,35 +75,25 @@ public class Client {
      * @return true si la connexion est acceptée, sinon false
      */
     private static boolean joinGame() {
-        try (Socket tcpSocket = new Socket(SERVER_HOST, TCP_PORT)) {
-            System.out.println("Connecting to server via TCP...");
+        try (Socket tcpSocket = new Socket(SERVER_HOST, TCP_PORT);
             BufferedReader in = new BufferedReader(new InputStreamReader(tcpSocket.getInputStream(), StandardCharsets.UTF_8));
             PrintWriter out = new PrintWriter(new OutputStreamWriter(tcpSocket.getOutputStream(), StandardCharsets.UTF_8), true);
+            Scanner scanner = new Scanner(System.in)){
+
+            System.out.println("Connecting to server via TCP...");
+
 
             // Lire la réponse du serveur
             String response = in.readLine();
-            if (response.startsWith("NICKNAME:")) {
-                String nickname = response.substring(9);
-                System.out.println("Joined game as " + nickname);
-                return true;
-            } else {
+            if (!response.startsWith("NICKNAME:")) {
+
                 System.out.println("Failed to join game. Response: " + response);
                 return false;
             }
-        } catch (IOException e) {
-            System.out.println("Failed to join game: " + e.getMessage());
-            return false;
-        }
-    }
+            String nickname = response.substring(9);
+            System.out.println("Joined game as " + nickname);
 
-    /**
-     * Joue au jeu en TCP, répond aux calculs et reçoit les validations.
-     */
-    private static void playGame() {
-        try (Socket tcpSocket = new Socket(SERVER_HOST, TCP_PORT);
-             BufferedReader in = new BufferedReader(new InputStreamReader(tcpSocket.getInputStream(), StandardCharsets.UTF_8));
-             PrintWriter out = new PrintWriter(new OutputStreamWriter(tcpSocket.getOutputStream(), StandardCharsets.UTF_8), true);
-             Scanner scanner = new Scanner(System.in)) {
+
 
             System.out.println("Game started! Solve the calculations.");
 
@@ -131,9 +124,12 @@ public class Client {
                     break;
                 }
             }
+
         } catch (IOException e) {
-            System.out.println("Connection lost: " + e.getMessage());
+            System.out.println("Failed to join game: " + e.getMessage());
+            return false;
         }
+        return true;
     }
 
     /**
