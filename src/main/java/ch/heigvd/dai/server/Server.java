@@ -21,7 +21,7 @@ public class Server {
             "LeibnizLethal", "xX_HilbertHunter_Xx", "NoetherNova", "FibonacciFrenzy", "xXx_KleinCrusher_xXx",
             "RamanujanRavager", "GaloisGuardian"};
 
-    private final int ROUND_DURATION_SECONDS = 2 * 60;
+    private final int ROUND_DURATION_SECONDS = 60;//= 2 * 60; //TODO
 
     private final List<ClientHandler> clients = new CopyOnWriteArrayList<>();
     private CountDownLatch gameStartLatch = new CountDownLatch(1);
@@ -110,10 +110,8 @@ public class Server {
 
         long gameDuration = ROUND_DURATION_SECONDS * 1000;
         long gameEndTime = System.currentTimeMillis() + gameDuration;
-
         // Lancer la logique du jeu
         game(gameEndTime);
-
         // Après la fin du jeu
         gameRunning = false;
 
@@ -242,15 +240,15 @@ public class Server {
                 // Envoyer le pseudo au client
                 sendMessage("NICKNAME " + nickname);
 
-                String clientMessage = in.readLine();
-                System.out.println("[Serveur a reçu des données textuelles du client] : " + clientMessage);
+                //String clientMessage = in.readLine();
+                //System.out.println("[Serveur a reçu des données textuelles du client] : " + clientMessage);
 
                 // Attendre le démarrage du jeu
                 server.gameStartLatch.await();
 
                 // Envoyer la première opération
                 Operation currentOperation = server.getOperation(operationIndex);
-                sendMessage(currentOperation.toString());
+                sendMessage("CALCULATION "+currentOperation.toString());
 
                 // Logique du jeu pour le client
                 while (running && server.gameRunning) {

@@ -99,7 +99,7 @@ public class Client {
 
             String serverMessage;
             while ((serverMessage = in.readLine()) != null) {
-                if (serverMessage.startsWith("CALCULATION")) {
+                if (serverMessage.startsWith("CALCULATION ")) {
                     // Recevoir une opération
                     String calculation = serverMessage.substring(12); // Enlever "CALCULATION "
                     System.out.println("Solve: " + calculation);
