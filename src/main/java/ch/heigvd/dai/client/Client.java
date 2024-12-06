@@ -12,6 +12,7 @@ public class Client {
     private static final int TCP_PORT = 42069; // Port TCP
     private static final String MULTICAST_ADDRESS = "239.165.14.215";
     private static String NETWORK_INTERFACE;
+    private static final Scanner scanner = new Scanner(System.in);
 
     // prevents developper from instanciating client without server ip
     private Client(){}
@@ -77,11 +78,9 @@ public class Client {
     private static boolean joinGame() {
         try (Socket tcpSocket = new Socket(SERVER_HOST, TCP_PORT);
             BufferedReader in = new BufferedReader(new InputStreamReader(tcpSocket.getInputStream(), StandardCharsets.UTF_8));
-            PrintWriter out = new PrintWriter(new OutputStreamWriter(tcpSocket.getOutputStream(), StandardCharsets.UTF_8), true);
-            Scanner scanner = new Scanner(System.in)){
+            PrintWriter out = new PrintWriter(new OutputStreamWriter(tcpSocket.getOutputStream(), StandardCharsets.UTF_8), true)){
 
             System.out.println("Connecting to server via TCP...");
-
 
             // Lire la réponse du serveur
             String response = in.readLine();
@@ -93,38 +92,44 @@ public class Client {
             String nickname = response.substring(9);
             System.out.println("Joined game as " + nickname);
 
-
-
             System.out.println("Game started! Solve the calculations.");
 
             String serverMessage;
-            boolean correct = false;
-            while ((serverMessage = in.readLine()) != null || !correct) { //TODO
-                if (serverMessage.startsWith("CALCULATION ")) {
+            boolean correct = true;
+            while (true) {
+
+                if(correct){
+                    serverMessage = in.readLine();
+                    if(serverMessage == null)
+                        break;
+                    if (!serverMessage.startsWith("CALCULATION "))
+                        continue;
+
                     // Recevoir une opération
                     String calculation = serverMessage.substring(12); // Enlever "CALCULATION "
                     System.out.println("Solve: " + calculation);
+                }
 
-                    // Lire la réponse de l'utilisateur
-                    System.out.print("Your answer: ");
-                    String answer = scanner.nextLine();
+                // Lire la réponse de l'utilisateur
+                System.out.print("Your answer: ");
+                String answer = scanner.nextLine();
 
-                    // Envoyer la réponse au serveur
-                    out.println("ANSWER " + answer);
+                // Envoyer la réponse au serveur
+                out.println("ANSWER " + answer);
 
-                    // Lire la validation du serveur
-                    String validation = in.readLine();
-                    if (validation.equals("CORRECT")) {
-                        System.out.println("Correct!");
-                        correct = true;
-                    } else if (validation.equals("INCORRECT")) {
-                        System.out.println("Incorrect. Try again.");
-                        correct = false;
-                    }
-                } else if (serverMessage.equals("END ROUND")) {
-                    // Fin de la partie
-                    System.out.println("The round has ended.");
+                // Lire la validation du serveur
+                String validation = in.readLine();
+                if (validation == null) {
+                    // server closed the connection
                     break;
+                }
+
+                if (validation.equals("CORRECT")) {
+                    System.out.println("Correct!");
+                    correct = true;
+                } else if (validation.equals("INCORRECT")) {
+                    System.out.println("Incorrect. Try again.");
+                    correct = false;
                 }
             }
             System.out.println("Exited game");

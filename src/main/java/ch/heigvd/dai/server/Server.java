@@ -105,13 +105,22 @@ public class Server {
 
         generateOperationsList();
 
+        long gameDuration = ROUND_DURATION_SECONDS * 1000;
+        long gameEndTime = System.currentTimeMillis() + gameDuration;
+
+        // Lancer la logique du jeu
+
         // Signal the ClientHandlers that the game is starting
         gameStartLatch.countDown();
 
-        long gameDuration = ROUND_DURATION_SECONDS * 1000;
-        long gameEndTime = System.currentTimeMillis() + gameDuration;
-        // Lancer la logique du jeu
-        game(gameEndTime);
+        while (System.currentTimeMillis() < gameEndTime && gameRunning) {
+            try {
+                Thread.sleep(1000); // Attendre un moment
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
         // Après la fin du jeu
         gameRunning = false;
 
@@ -136,17 +145,6 @@ public class Server {
             Operation newOp = new Operation(nbOperationNumbers);
             operationsList.add(newOp);
             return newOp;
-        }
-    }
-
-    private void game(long gameEndTime) {
-        while (System.currentTimeMillis() < gameEndTime && gameRunning) {
-            try {
-                Thread.sleep(1000); // Attendre un moment
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                break;
-            }
         }
     }
 
@@ -271,13 +269,13 @@ public class Server {
                             operationIndex++;
                             // Envoyer la prochaine opération
 
+                            currentOperation = server.getOperation(operationIndex);
+                            sendMessage("CALCULATION " + currentOperation.toString());
                         } else {
                             // Envoyer "INCORRECT" et renvoyer la même opération
                             sendMessage("INCORRECT");
                             // On ne change pas l'opération actuelle
                         }
-                        currentOperation = server.getOperation(operationIndex);
-                        sendMessage("CALCULATION " + currentOperation.toString());
                     } catch (NumberFormatException e) {
                         // Le client a envoyé un nombre invalide
                         System.out.println("bug");
