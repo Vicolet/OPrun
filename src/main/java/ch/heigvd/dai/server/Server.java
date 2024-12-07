@@ -21,7 +21,8 @@ public class Server {
             "LeibnizLethal", "xX_HilbertHunter_Xx", "NoetherNova", "FibonacciFrenzy", "xXx_KleinCrusher_xXx",
             "RamanujanRavager", "GaloisGuardian"};
 
-    private final int ROUND_DURATION_SECONDS = 60;//= 2 * 60; //TODO
+    private final int ROUND_DURATION_SECONDS = 60;
+    private final int WAIT_FOR_PLAYERS_DURATION_SECONDS = 30;
 
     private final List<ClientHandler> clients = new CopyOnWriteArrayList<>();
     private CountDownLatch gameStartLatch = new CountDownLatch(1);
@@ -72,7 +73,7 @@ public class Server {
             executor = Executors.newVirtualThreadPerTaskExecutor();
             System.out.println("Server listening on port " + PORT);
 
-            long endTime = System.currentTimeMillis() + 2000;//60000 // Accept clients for 1 minute //TODO
+            long endTime = System.currentTimeMillis() + WAIT_FOR_PLAYERS_DURATION_SECONDS * 1000;
             serverSocket.setSoTimeout(1000); // 1-second timeout for accept()
 
             while (System.currentTimeMillis() < endTime) {

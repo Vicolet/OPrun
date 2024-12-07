@@ -35,12 +35,12 @@ public class Client extends Thread{
             InetSocketAddress multicastGroup = new InetSocketAddress(multicastAddress, UDP_PORT);
             NetworkInterface networkInterface = NetworkInterface.getByName(NETWORK_INTERFACE);
             udpSocket.joinGroup(multicastGroup, networkInterface);
-            // Étape 1 : Écouter les messages de statut du serveur via UDP
 
-            System.out.println("Waiting for server broadcasts...");
 
+            // launches the game round thread (run method)
             this.start();
 
+            System.out.println("Waiting for server broadcasts...");
             while (true) {
                 // Recevoir le statut du serveur via UDP
                 String serverStatus = receiveUdpMessage(udpSocket);
