@@ -169,18 +169,12 @@ No response expected.
 
 ## Section 4 - Examples
 
-### Functional example
+### Example with 1 client
 
-![Functional example](./images/example-1-functional-example.png)
+![1 client example](img/1client.svg)
 
-### Join the server with a duplicate client name
+### Example with 2 clients
 
-![CJoin the server with a duplicate client name example](./images/example-2-join-the-server-with-a-duplicate-client-name.png)
+![2 clients example](img/2clients.svg)
 
-### Send a message to an unconnected recipient
-
-![Send a message to an unconnected recipient example](./images/example-3-send-a-message-to-an-unconnected-recipient.png)
-
-### Send a message that is too long
-
-![Send a message that is too long example](./images/example-4-send-a-message-that-is-too-long.png)
+the waiting indicationsa are not in this schema due to the lack of space
