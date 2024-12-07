@@ -71,7 +71,6 @@ STATUS <status>
 
 #### Parameters
 `<status>` can be:
-- `GAME IN PROGRESS`: A game is in progress and the server will not accept new players
 - `WAITING FOR PLAYERS`: Waiting for players for next round
 
 #### Response
@@ -90,7 +89,7 @@ The client expects a response.
 
 #### Response
 
-- `OK <nickname>`: the client has been granted access to the next round, the client's nickname for this round is `<nickname>`
+- `NICKNAME <nickname>`: the client has been granted access to the next round, the client's nickname for this round is `<nickname>`
 - `ERROR <code>`: an error occurred during the join. The error code is an
   integer between 1 and 2 inclusive. The error codes are as follow:
   - 1: the server is not in a waiting state
