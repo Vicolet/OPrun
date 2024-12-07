@@ -3,16 +3,16 @@ package ch.heigvd.dai.client;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
-import java.util.Scanner;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-public class Client {
+public class Client extends Thread{
 
-    private static String SERVER_HOST; // Adresse du serveur
-    private static final int UDP_PORT = 42069; // Port UDP
-    private static final int TCP_PORT = 42069; // Port TCP
-    private static final String MULTICAST_ADDRESS = "239.165.14.215";
-    private static String NETWORK_INTERFACE;
-    private static final Scanner scanner = new Scanner(System.in);
+    private String SERVER_HOST; // Adresse du serveur
+    private final int UDP_PORT = 42069; // Port UDP
+    private final int TCP_PORT = 42069; // Port TCP
+    private final String MULTICAST_ADDRESS = "239.165.14.215";
+    private String NETWORK_INTERFACE;
+    private AtomicBoolean runGame = new AtomicBoolean(false);
 
     // prevents developper from instanciating client without server ip
     private Client(){}
@@ -25,7 +25,7 @@ public class Client {
     /**
      * Méthode principale pour exécuter le client.
      */
-    public static void run() {
+    public void startClient() {
         try (MulticastSocket udpSocket = new MulticastSocket(UDP_PORT);) {
 
             if(NETWORK_INTERFACE.equals("CHANGE-ME!!!"))
@@ -39,28 +39,25 @@ public class Client {
 
             System.out.println("Waiting for server broadcasts...");
 
+            this.start();
+
             while (true) {
                 // Recevoir le statut du serveur via UDP
                 String serverStatus = receiveUdpMessage(udpSocket);
-                System.out.println("Server status: " + serverStatus);
 
                 if (serverStatus.equals("STATUS WAITING FOR PLAYERS")) {
-                    // Si le serveur est prêt, tenter de rejoindre une partie
-                    if(!joinGame())
-                    {
-                        System.out.println("Bye bye");
-                        //TODO: close
-                        return;
-                    }
-
-                } else if (serverStatus.equals("STATUS GAME IN PROGRESS")) {
-                    System.out.println("Game in progress. Waiting...");
+                    // Si le serveur est prêt, signaler au thread de jeu de se connecter en TCP
+                    runGame.set(true);
                 } else if (serverStatus.startsWith("LEADERBOARD")) {
+
+                    // mettre fin au thread de jeu
+                    runGame.set(false);
+
                     // Afficher les classements après un round
+                    System.out.println();
+                    System.out.println();
                     System.out.println("Leaderboard: " + serverStatus.substring(11));
                 }
-
-                Thread.sleep(500); // Attente entre les checks
             }
         } catch (Exception e) {
             if(NETWORK_INTERFACE.equals("CHANGE-ME!!!"))
@@ -70,15 +67,25 @@ public class Client {
         }
     }
 
-    /**
-     * Connecte le client au serveur pour rejoindre une partie.
-     *
-     * @return true si la connexion est acceptée, sinon false
-     */
-    private static boolean joinGame() {
+    @Override
+    public void run(){
+        try{
+            while(true){
+                if(runGame.get())
+                    runRound();
+                else
+                    Thread.sleep(300);
+            }
+        } catch (InterruptedException e) {
+            // terminate normally
+        }
+    }
+
+    public void runRound() {
         try (Socket tcpSocket = new Socket(SERVER_HOST, TCP_PORT);
-            BufferedReader in = new BufferedReader(new InputStreamReader(tcpSocket.getInputStream(), StandardCharsets.UTF_8));
-            PrintWriter out = new PrintWriter(new OutputStreamWriter(tcpSocket.getOutputStream(), StandardCharsets.UTF_8), true)){
+             BufferedReader in = new BufferedReader(new InputStreamReader(tcpSocket.getInputStream(), StandardCharsets.UTF_8));
+             PrintWriter out = new PrintWriter(new OutputStreamWriter(tcpSocket.getOutputStream(), StandardCharsets.UTF_8), true);
+             BufferedReader br = new BufferedReader(new InputStreamReader(System.in))) {
 
             System.out.println("Connecting to server via TCP...");
 
@@ -87,7 +94,7 @@ public class Client {
             if (!response.startsWith("NICKNAME ")) {
 
                 System.out.println("Failed to join game. Response: " + response);
-                return false;
+                return;
             }
             String nickname = response.substring(9);
             System.out.println("Joined game as " + nickname);
@@ -98,9 +105,9 @@ public class Client {
             boolean correct = true;
             while (true) {
 
-                if(correct){
+                if (correct) {
                     serverMessage = in.readLine();
-                    if(serverMessage == null)
+                    if (serverMessage == null)
                         break;
                     if (!serverMessage.startsWith("CALCULATION "))
                         continue;
@@ -112,7 +119,14 @@ public class Client {
 
                 // Lire la réponse de l'utilisateur
                 System.out.print("Your answer: ");
-                String answer = scanner.nextLine();
+                String answer;
+
+                while (!br.ready()) {
+                    if (!runGame.get())
+                        return;
+                    Thread.sleep(200);
+                }
+                answer = br.readLine();
 
                 // Envoyer la réponse au serveur
                 out.println("ANSWER " + answer);
@@ -135,9 +149,9 @@ public class Client {
             System.out.println("Exited game");
         } catch (IOException e) {
             System.out.println("Failed to join game: " + e.getMessage());
-            return false;
+        } catch (InterruptedException e) {
+            // exit normally
         }
-        return true;
     }
 
     /**
