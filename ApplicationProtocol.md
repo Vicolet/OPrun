@@ -161,7 +161,7 @@ UDP
 ```
 LEADERBOARD <nickname 1> <number of points of player 1> <nickname 2> <number of points of player 2> ...
 ```
-The server should sort the nickname by decroissant number of points, so that the first player in the leaderboard
+The server should sort the nickname by descending number of points, so that the first player in the leaderboard
 wins the round.
 
 #### Response
@@ -177,4 +177,4 @@ No response expected.
 
 ![2 clients example](img/2clients.svg)
 
-the waiting indicationsa are not in this schema due to the lack of space
+The indicators for waiting are not in this schema due to the lack of space
