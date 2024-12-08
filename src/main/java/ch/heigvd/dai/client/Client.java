@@ -151,6 +151,8 @@ public class Client extends Thread{
             System.out.println("Failed to join game: " + e.getMessage());
         } catch (InterruptedException e) {
             // exit normally
+        } finally {
+            runGame.set(false);
         }
     }
 
