@@ -13,9 +13,6 @@ RUN apt-get update && \
 ENV JAVA_HOME=/usr/lib/jvm/jdk-21.0.1+12
 ENV PATH="$JAVA_HOME/bin:${PATH}"
 
-# Vérifier la version de Java
-RUN java -version
-
 # Set working directory in the container
 WORKDIR /app
 
@@ -31,8 +28,6 @@ FROM openjdk:21-jdk-slim
 
 # Set working directory
 WORKDIR /app
-
-ENTRYPOINT bash
 
 # Copy the compiled JAR from the build stage
 COPY --from=build /app/oprun.jar ./oprun.jar
