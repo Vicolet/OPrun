@@ -13,7 +13,6 @@ public class Server {
 
     private static final int PORT = 42069;
     private final String MULTICAST_ADDRESS = "239.165.14.215";
-    private static final String HOST = "localhost";
     private static final String MESSAGE_WFP = "STATUS WAITING FOR PLAYERS"; // Waiting For Players
     private static final int nbOperationNumbers = 4;
     private static final String[] nickNames = {"xX_EuclidSn1p3r_Xx", "ArchimedesRage", "xXx_NewtonCrush_xXx",
@@ -22,7 +21,8 @@ public class Server {
             "LeibnizLethal", "xX_HilbertHunter_Xx", "NoetherNova", "FibonacciFrenzy", "xXx_KleinCrusher_xXx",
             "RamanujanRavager", "GaloisGuardian"};
 
-    private final int ROUND_DURATION_SECONDS = 2 * 60;
+    private final int ROUND_DURATION_SECONDS = 60;
+    private final int WAIT_FOR_PLAYERS_DURATION_SECONDS = 30;
 
     private final List<ClientHandler> clients = new CopyOnWriteArrayList<>();
     private CountDownLatch gameStartLatch = new CountDownLatch(1);
@@ -73,7 +73,7 @@ public class Server {
             executor = Executors.newVirtualThreadPerTaskExecutor();
             System.out.println("Server listening on port " + PORT);
 
-            long endTime = System.currentTimeMillis() + 60000; // Accept clients for 1 minute
+            long endTime = System.currentTimeMillis() + WAIT_FOR_PLAYERS_DURATION_SECONDS * 1000;
             serverSocket.setSoTimeout(1000); // 1-second timeout for accept()
 
             while (System.currentTimeMillis() < endTime) {
@@ -106,15 +106,22 @@ public class Server {
 
         generateOperationsList();
 
-        // Signal the ClientHandlers that the game is starting
-        gameStartLatch.countDown();
-
         long gameDuration = ROUND_DURATION_SECONDS * 1000;
         long gameEndTime = System.currentTimeMillis() + gameDuration;
 
         // Lancer la logique du jeu
-        game(gameEndTime);
 
+        // Signal the ClientHandlers that the game is starting
+        gameStartLatch.countDown();
+
+        while (System.currentTimeMillis() < gameEndTime && gameRunning) {
+            try {
+                Thread.sleep(1000); // Attendre un moment
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
         // Après la fin du jeu
         gameRunning = false;
 
@@ -139,17 +146,6 @@ public class Server {
             Operation newOp = new Operation(nbOperationNumbers);
             operationsList.add(newOp);
             return newOp;
-        }
-    }
-
-    private void game(long gameEndTime) {
-        while (System.currentTimeMillis() < gameEndTime && gameRunning) {
-            try {
-                Thread.sleep(1000); // Attendre un moment
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                break;
-            }
         }
     }
 
@@ -240,18 +236,18 @@ public class Server {
                 System.out.println("[Serveur] Nouveau client connecté depuis "
                         + socket.getInetAddress().getHostAddress() + ":" + socket.getPort());
 
-                String clientMessage = in.readLine();
-                System.out.println("[Serveur a reçu des données textuelles du client] : " + clientMessage);
+                // Envoyer le pseudo au client
+                sendMessage("NICKNAME " + nickname);
+
+                //String clientMessage = in.readLine();
+                //System.out.println("[Serveur a reçu des données textuelles du client] : " + clientMessage);
 
                 // Attendre le démarrage du jeu
                 server.gameStartLatch.await();
 
-                // Envoyer le pseudo au client
-                sendMessage("NICKNAME:" + nickname);
-
                 // Envoyer la première opération
                 Operation currentOperation = server.getOperation(operationIndex);
-                sendMessage(currentOperation.toString());
+                sendMessage("CALCULATION "+currentOperation.toString());
 
                 // Logique du jeu pour le client
                 while (running && server.gameRunning) {
@@ -262,16 +258,18 @@ public class Server {
                         break;
                     }
                     System.out.println("Reçu du client [" + nickname + "] : " + message);
-
+                    System.out.println("Correct answer: " + currentOperation.getResult()); //TODO
                     // Traiter la réponse du client
                     try {
-                        int clientAnswer = Integer.parseInt(message.trim());
+
+                        int clientAnswer = Integer.parseInt(message.substring(7).trim()); // 7 stands for ANSWER
                         int correctAnswer = currentOperation.getResult();
                         if (clientAnswer == correctAnswer) {
                             sendMessage("CORRECT");
                             score++;
                             operationIndex++;
                             // Envoyer la prochaine opération
+
                             currentOperation = server.getOperation(operationIndex);
                             sendMessage("CALCULATION " + currentOperation.toString());
                         } else {
@@ -281,6 +279,7 @@ public class Server {
                         }
                     } catch (NumberFormatException e) {
                         // Le client a envoyé un nombre invalide
+                        System.out.println("bug");
                         sendMessage("INCORRECT");
                     }
                 }

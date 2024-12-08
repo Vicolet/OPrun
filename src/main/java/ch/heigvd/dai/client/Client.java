@@ -2,130 +2,155 @@ package ch.heigvd.dai.client;
 
 import java.io.*;
 import java.net.*;
-import java.util.Scanner;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-public class Client {
+public class Client extends Thread{
 
-    private static String SERVER_HOST; // Adresse du serveur
-    private static final int UDP_PORT = 42069; // Port UDP
-    private static final int TCP_PORT = 42069; // Port TCP
-    private static final String MULTICAST_ADDRESS = "239.165.14.215";
-    private static final String NETWORK_INTERFACE = "lo";
+    private String SERVER_HOST; // Adresse du serveur
+    private final int UDP_PORT = 42069; // Port UDP
+    private final int TCP_PORT = 42069; // Port TCP
+    private final String MULTICAST_ADDRESS = "239.165.14.215";
+    private String NETWORK_INTERFACE;
+    private AtomicBoolean runGame = new AtomicBoolean(false);
 
     // prevents developper from instanciating client without server ip
     private Client(){}
 
-    public Client(String server_ip){
+    public Client(String server_ip, String network_interface){
         SERVER_HOST = server_ip;
+        NETWORK_INTERFACE = network_interface;
     }
 
     /**
      * Méthode principale pour exécuter le client.
      */
-    public static void run() {
+    public void startClient() {
         try (MulticastSocket udpSocket = new MulticastSocket(UDP_PORT);) {
+
+            if(NETWORK_INTERFACE.equals("CHANGE-ME!!!"))
+                throw new RuntimeException("bad network interface");
 
             InetAddress multicastAddress = InetAddress.getByName(MULTICAST_ADDRESS);
             InetSocketAddress multicastGroup = new InetSocketAddress(multicastAddress, UDP_PORT);
-                NetworkInterface networkInterface = NetworkInterface.getByName(NETWORK_INTERFACE);
+            NetworkInterface networkInterface = NetworkInterface.getByName(NETWORK_INTERFACE);
             udpSocket.joinGroup(multicastGroup, networkInterface);
-            // Étape 1 : Écouter les messages de statut du serveur via UDP
+
+
+            // launches the game round thread (run method)
+            this.start();
 
             System.out.println("Waiting for server broadcasts...");
-
             while (true) {
+                // Recevoir le statut du serveur via UDP
                 String serverStatus = receiveUdpMessage(udpSocket);
-                System.out.println("Server status: " + serverStatus);
 
                 if (serverStatus.equals("STATUS WAITING FOR PLAYERS")) {
-                    // Si le serveur est prêt, établir une connexion TCP
-                    if (joinGame()) {
-                        // Étape 2 : Jouer au jeu en TCP
-                        playGame();
-                    }
-                } else if (serverStatus.equals("STATUS GAME IN PROGRESS")) {
-                    System.out.println("Game in progress. Waiting...");
+                    // Si le serveur est prêt, signaler au thread de jeu de se connecter en TCP
+                    runGame.set(true);
                 } else if (serverStatus.startsWith("LEADERBOARD")) {
+
+                    // mettre fin au thread de jeu
+                    runGame.set(false);
+
+                    // Afficher les classements après un round
+                    System.out.println();
+                    System.out.println();
                     System.out.println("Leaderboard: " + serverStatus.substring(11));
                 }
-
-                Thread.sleep(500); // Attente entre les checks
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            if(NETWORK_INTERFACE.equals("CHANGE-ME!!!"))
+                System.out.println("Please change the IntelliJ configuration to use your network interface name!");
+            else
+                e.printStackTrace();
         }
     }
 
-    /**
-     * Connecte le client au serveur pour rejoindre une partie.
-     *
-     * @return true si la connexion est acceptée, sinon false
-     */
-    private static boolean joinGame() {
-        try (Socket tcpSocket = new Socket(SERVER_HOST, TCP_PORT)) {
+    @Override
+    public void run(){
+        try{
+            while(true){
+                if(runGame.get())
+                    runRound();
+                else
+                    Thread.sleep(300);
+            }
+        } catch (InterruptedException e) {
+            // terminate normally
+        }
+    }
+
+    public void runRound() {
+        try (Socket tcpSocket = new Socket(SERVER_HOST, TCP_PORT);
+             BufferedReader in = new BufferedReader(new InputStreamReader(tcpSocket.getInputStream(), StandardCharsets.UTF_8));
+             PrintWriter out = new PrintWriter(new OutputStreamWriter(tcpSocket.getOutputStream(), StandardCharsets.UTF_8), true);
+             BufferedReader br = new BufferedReader(new InputStreamReader(System.in))) {
+
             System.out.println("Connecting to server via TCP...");
-            BufferedReader in = new BufferedReader(new InputStreamReader(tcpSocket.getInputStream()));
 
             // Lire la réponse du serveur
             String response = in.readLine();
-            if (response.startsWith("OK")) {
-                String nickname = response.split(" ")[1];
-                System.out.println("Joined game as " + nickname);
-                return true;
-            } else if (response.startsWith("ERROR")) {
-                int errorCode = Integer.parseInt(response.split(" ")[1]);
-                if (errorCode == 1) {
-                    System.out.println("Error: Server is not in a waiting state.");
-                } else if (errorCode == 2) {
-                    System.out.println("Error: The next round is full.");
-                }
-                return false;
-            }
-        } catch (IOException e) {
-            System.out.println("Failed to join game: " + e.getMessage());
-        }
-        return false;
-    }
+            if (!response.startsWith("NICKNAME ")) {
 
-    /**
-     * Joue au jeu de calcul mental selon le protocole OPrun.
-     */
-    private static void playGame() {
-        try (Socket tcpSocket = new Socket(SERVER_HOST, TCP_PORT);
-             BufferedReader in = new BufferedReader(new InputStreamReader(tcpSocket.getInputStream()));
-             PrintWriter out = new PrintWriter(tcpSocket.getOutputStream(), true);
-             Scanner scanner = new Scanner(System.in)) {
+                System.out.println("Failed to join game. Response: " + response);
+                return;
+            }
+            String nickname = response.substring(9);
+            System.out.println("Joined game as " + nickname);
 
             System.out.println("Game started! Solve the calculations.");
 
             String serverMessage;
-            while ((serverMessage = in.readLine()) != null) {
-                if (serverMessage.startsWith("CALCULATION")) {
+            boolean correct = true;
+            while (true) {
+
+                if (correct) {
+                    serverMessage = in.readLine();
+                    if (serverMessage == null)
+                        break;
+                    if (!serverMessage.startsWith("CALCULATION "))
+                        continue;
+
                     // Recevoir une opération
                     String calculation = serverMessage.substring(12); // Enlever "CALCULATION "
                     System.out.println("Solve: " + calculation);
+                }
 
-                    // Lire la réponse de l'utilisateur
-                    System.out.print("Your answer: ");
-                    String answer = scanner.nextLine();
+                // Lire la réponse de l'utilisateur
+                System.out.print("Your answer: ");
+                String answer;
 
-                    // Envoyer la réponse au serveur
-                    out.println("ANSWER " + answer);
+                while (!br.ready()) {
+                    if (!runGame.get())
+                        return;
+                    Thread.sleep(200);
+                }
+                answer = br.readLine();
 
-                    // Lire la validation du serveur
-                    String validation = in.readLine();
-                    if (validation.equals("CORRECT")) {
-                        System.out.println("Correct!");
-                    } else if (validation.equals("INCORRECT")) {
-                        System.out.println("Incorrect. Try again.");
-                    }
-                } else if (serverMessage.equals("END ROUND")) {
-                    System.out.println("The round has ended.");
+                // Envoyer la réponse au serveur
+                out.println("ANSWER " + answer);
+
+                // Lire la validation du serveur
+                String validation = in.readLine();
+                if (validation == null) {
+                    // server closed the connection
                     break;
                 }
+
+                if (validation.equals("CORRECT")) {
+                    System.out.println("Correct!");
+                    correct = true;
+                } else if (validation.equals("INCORRECT")) {
+                    System.out.println("Incorrect. Try again.");
+                    correct = false;
+                }
             }
+            System.out.println("Exited game");
         } catch (IOException e) {
-            System.out.println("Connection lost: " + e.getMessage());
+            System.out.println("Failed to join game: " + e.getMessage());
+        } catch (InterruptedException e) {
+            // exit normally
         }
     }
 
