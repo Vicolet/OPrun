@@ -149,7 +149,6 @@ public class Client extends Thread{
             System.out.println("Exited game");
         } catch (IOException e) {
             System.out.println("Failed to join game: " + e.getMessage());
-            e.printStackTrace();
         } catch (InterruptedException e) {
             // exit normally
         } finally {
