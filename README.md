@@ -33,8 +33,6 @@ docker --version
 ### Set up build
 #### Docker network
 Use this command to create a network so the containers can communicate with each others:
-ATTENTION A METTRE A JOUR. LE RESEAU 127.0.0.0 NE SEMBLE PAS ETRE COMPATIBLE DOCKER
-AUSSI NOTRE MULTICAST NE FONCTIONNE PAS SUR CE SOUS RESEAU
 ```bash
 docker network create \
   --driver bridge \
@@ -43,7 +41,6 @@ docker network create \
 ```
 #### Docker image
 With the existing Dockerfile in the project build the image with the following command:
-(mvn clean package -DskipTests) TEST
 ```bash
 docker build -t oprun -f Dockerfile .
 ```
@@ -164,8 +161,34 @@ mvn -version
 ```
 
 ### Workflow
+This section explains about the different classes in the project and their functions in order to understand it better.
 
-### Environment
+#### Client.java
+The Client class is simply structured: 
+- First create a new instance of Client()
+- StartClient() is the entry point where the client is connected to the multicast group
+- RunRound() is the function called by a background thread that discusses with the server in TCP
+- receiveUdpMessage() is a util function
+
+#### Server.java
+The Server class is structured differently with the main class and its subclass:
+- First create a new instance of Server():
+- startServer() is the entry point where different methods are called:
+  - sendBroadcast() that sends only one broadcast on the subnetwork of docker
+  - acceptClients() that waits for the clients to connect
+    - run() in ClientHandler that manages the discussion with the client
+  - startGame() that manages the time taken in the round
+
+The remaining functions are util functions.
+
+#### Operation.java
+This class creates random operations and return them as a string. We've set these rules to make the game funnier and not to difficult:
+- MAX_NUMBER = 10 defines the maximum of operations the class can handle. You can set this between 2 and 10 in the constructor.
+- MAX_NUMBER_BOUND = 50 defines the maximum that a number can reach. High numbers are difficult to calculate and the game loses it's fun if this constant is too high
+- MAX_MULT_COEFF = 15 defines the maximum a number that multiplies another can get to. For example 15 * 50 would be a limit with our defined rules
+- We've created this class so it as has maximum of one multiplication in a calculation to avoid high complexity, but you can change it in the getRandomOperators function
+
+
 
 
 
