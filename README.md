@@ -51,24 +51,66 @@ docker build -t oprun -f Dockerfile .
 ### Set up run
 Use the following command to first run the client:\
 Note: be sure to change the interface to suit your configuration. You can check your working interfaces with following command:
+
+Windows:
 ```bash
 netsh interface show interface
 ```
 And then run the client with the correct interface:\
 Note: if you use multiple clients, make sure to also change the --name for each client.
-A MODIFIER SELON L IP
+
+### Build and run with maven
+#### Build
+Windows:
+```bash
+./mvnw.cmd package clean
+```
+
+Unix:
+```bash
+./mvnw package clean
+```
+
+#### Run
+
+Client:
+```bash
+java -jar oprun.jar client --ip <server ip> --interface <name of network interface to use>
+```
+
+Server:
+```bash
+java -jar oprun.jar server
+```
+
+### Run with docker
+Pull the container:
+```bash
+docker pull ghcr.io/nyaaw/oprun
+```
+
+while it's downloading, you can setup the docker network to make the two instances communicate:
+
+```bash
+docker network create --opt com.docker.network.bridge.name=oprunif oprunnet
+```
+
+When the image has been downloaded, run with:
+
 ```bash
 docker run --rm -it \
-  --name game-client-1 \
-  --network game-network \
-  oprun client --ip 127.0.0.1 --interface <interface>
+  --network oprunnet \
+  --name client \
+  ghcr.io/nyaaw/oprun \
+  client --ip server --interface oprunif
 ```
 Once all the needed clients have been launched, you can then run the server:
 ```bash
 docker run --rm -it \
-  --name game-server \
-  --network game-network \
-  oprun server
+  --network oprunnet \
+  --name server \
+  ghcr.io/nyaaw/oprun \
+  server
 ```
 The game will launch and the clients will receive their first calculation.
 
