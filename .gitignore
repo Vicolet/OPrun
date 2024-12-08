@@ -1,0 +1,52 @@
+oprun.jar
+target/
+**/.mvn/wrapper/maven-wrapper.jar
+
+# General
+**/.idea/libraries/
+**/.idea/shelf/
+**/.idea/compiler.xml
+**/.idea/jarRepositories.xml
+**/.idea/modules.xml
+**/.idea/workspace.xml
+*.iws
+*.iml
+*.ipr
+
+# Editor-based HTTP Client requests
+**/.idea/httpRequests/
+
+# Datasource local storage ignored files
+**/.idea/dataSources/
+**/.idea/dataSources.local.xml
+
+### Eclipse ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
+.vscode/
+
+### Mac OS ###
+.DS_Store
+
+# Windows thumbnail cache files
+Thumbs.db
+
+# Linux tmp files
+*~
