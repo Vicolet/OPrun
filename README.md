@@ -41,8 +41,9 @@ docker network create \
 ```
 #### Docker image
 With the existing Dockerfile in the project build the image with the following command:
+(mvn clean package -DskipTests) TEST
 ```bash
-docker build -t OPrun -f Dockerfile .
+docker build -t oprun -f Dockerfile .
 ```
 
 ### Set up run
@@ -57,14 +58,14 @@ Note: if you use multiple clients, make sure to also change the --name for each 
 docker run --rm -it \
   --name game-client-1 \
   --network game-network \
-  OPrun client --ip 127.0.0.1 --interface <interface>
+  oprun client --ip 127.0.0.1 --interface <interface>
 ```
 Once all the needed clients have been launched, you can then run the server:
 ```bash
 docker run --rm -it \
   --name game-server \
   --network game-network \
-  OPrun server
+  oprun server
 ```
 The game will launch and the clients will receive their first calculation.
 
