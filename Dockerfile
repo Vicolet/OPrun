@@ -24,7 +24,7 @@ COPY pom.xml .
 COPY src ./src
 
 # Build the application
-RUN mvn clean package -DskipTests
+RUN mvn package clean -DskipTests
 
 # Stage 2: Create a lightweight runtime image
 FROM openjdk:21-jdk-slim
@@ -32,8 +32,10 @@ FROM openjdk:21-jdk-slim
 # Set working directory
 WORKDIR /app
 
+ENTRYPOINT bash
+
 # Copy the compiled JAR from the build stage
-COPY --from=build /app/target/OPrun-1.0.jar ./oprun.jar
+COPY --from=build /app/oprun.jar ./oprun.jar
 
 # Define the entry point for the container
 ENTRYPOINT ["java", "-jar", "oprun.jar"]
