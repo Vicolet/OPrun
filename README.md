@@ -33,6 +33,8 @@ docker --version
 ### Set up build
 #### Docker network
 Use this command to create a network so the containers can communicate with each others:
+ATTENTION A METTRE A JOUR. LE RESEAU 127.0.0.0 NE SEMBLE PAS ETRE COMPATIBLE DOCKER
+AUSSI NOTRE MULTICAST NE FONCTIONNE PAS SUR CE SOUS RESEAU
 ```bash
 docker network create \
   --driver bridge \
@@ -54,6 +56,7 @@ netsh interface show interface
 ```
 And then run the client with the correct interface:\
 Note: if you use multiple clients, make sure to also change the --name for each client.
+A MODIFIER SELON L IP
 ```bash
 docker run --rm -it \
   --name game-client-1 \
